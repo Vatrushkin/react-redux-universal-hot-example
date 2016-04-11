@@ -1,0 +1,19 @@
+@import "../../theme/variables.scss";
+
+.loginForm {
+  margin-top: 2em;
+  text-align: center;
+
+  h1 {
+    font-family: $font-family-roboto;
+    font-weight: normal;
+  }
+}
+
+.loginField {
+  margin: auto;
+  padding: 0 1em 1em 1em;
+
+  width: 400px;
+}
+

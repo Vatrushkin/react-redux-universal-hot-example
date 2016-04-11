@@ -1,19 +1,24 @@
 import React from 'react';
 import {IndexRoute, Route} from 'react-router';
-import { isLoaded as isAuthLoaded, load as loadAuth } from 'redux/modules/auth';
+import { isLoaded as isAuthLoaded, loadAuthCookie } from 'actions/auth';
 import {
     App,
-    Chat,
-    Home,
-    Widgets,
-    About,
-    Login,
-    LoginSuccess,
-    Survey,
-    NotFound,
+    HomePage,
+    LoginSuccessPage,
+    NotFoundPage,
   } from 'containers';
 
 export default (store) => {
+  const checkAuthLoaded = callback => {
+    if (!isAuthLoaded(store.getState())) {
+      const promises = [];
+      promises.push(store.dispatch(loadAuthCookie()));
+      Promise.all(promises).then(callback);
+    } else {
+      callback();
+    }
+  };
+
   const requireLogin = (nextState, replace, cb) => {
     function checkAuth() {
       const { auth: { user }} = store.getState();
@@ -24,11 +29,19 @@ export default (store) => {
       cb();
     }
 
-    if (!isAuthLoaded(store.getState())) {
-      store.dispatch(loadAuth()).then(checkAuth);
-    } else {
-      checkAuth();
+    checkAuthLoaded(checkAuth);
+  };
+
+  const requireNoLogin = (nextState, replace, cb) => {
+    function checkAuth() {
+      const { auth: { user }} = store.getState();
+      if (user) {
+        // oops, not logged in, so can't be here!
+        replace('/loginSuccess');
+      }
+      cb();
     }
+    checkAuthLoaded(checkAuth);
   };
 
   /**
@@ -37,22 +50,15 @@ export default (store) => {
   return (
     <Route path="/" component={App}>
       { /* Home (main) route */ }
-      <IndexRoute component={Home}/>
+      <IndexRoute component={HomePage} onEnter={requireNoLogin}/>
 
       { /* Routes requiring login */ }
       <Route onEnter={requireLogin}>
-        <Route path="chat" component={Chat}/>
-        <Route path="loginSuccess" component={LoginSuccess}/>
+        <Route path="loginSuccess" component={LoginSuccessPage}/>
       </Route>
 
-      { /* Routes */ }
-      <Route path="about" component={About}/>
-      <Route path="login" component={Login}/>
-      <Route path="survey" component={Survey}/>
-      <Route path="widgets" component={Widgets}/>
-
       { /* Catch all route */ }
-      <Route path="*" component={NotFound} status={404} />
+      <Route path="*" component={NotFoundPage} status={404} />
     </Route>
   );
 };

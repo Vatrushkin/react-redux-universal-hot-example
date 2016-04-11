@@ -6,7 +6,7 @@ import favicon from 'serve-favicon';
 import compression from 'compression';
 import httpProxy from 'http-proxy';
 import path from 'path';
-import createStore from './redux/create';
+import createStore from './store/create';
 import ApiClient from './helpers/ApiClient';
 import Html from './helpers/Html';
 import PrettyError from 'pretty-error';
@@ -18,13 +18,15 @@ import createHistory from 'react-router/lib/createMemoryHistory';
 import {Provider} from 'react-redux';
 import getRoutes from './routes';
 
-const targetUrl = 'http://' + config.apiHost + ':' + config.apiPort;
+import cookie from 'react-cookie';
+
+const targetUrl = 'http://' + config.apiHost + ':' + config.apiPort + '/api/v1';
 const pretty = new PrettyError();
 const app = new Express();
 const server = new http.Server(app);
 const proxy = httpProxy.createProxyServer({
   target: targetUrl,
-  ws: true
+  ws: false
 });
 
 app.use(compression());
@@ -33,7 +35,8 @@ app.use(favicon(path.join(__dirname, '..', 'static', 'favicon.ico')));
 app.use(Express.static(path.join(__dirname, '..', 'static')));
 
 // Proxy to API server
-app.use('/api', (req, res) => {
+app.use('/api/', (req, res) => {
+  console.log(targetUrl);
   proxy.web(req, res, {target: targetUrl});
 });
 
@@ -65,6 +68,8 @@ app.use((req, res) => {
     // hot module replacement is enabled in the development env
     webpackIsomorphicTools.refresh();
   }
+  cookie.plugToRequest(req, res);
+
   const client = new ApiClient(req);
   const history = createHistory(req.originalUrl);
 
